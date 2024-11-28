@@ -7,6 +7,7 @@ import com.example.bankManagementApp.repository.AccountRepository;
 import com.example.bankManagementApp.service.AccountService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -53,8 +54,13 @@ public class AccountServiceImpl implements AccountService {
         if (amountToBeWithdrawn > account.getBalance()){
             throw new RuntimeException("Insufficient amount");
         }
+        if (amountToBeWithdrawn>account.getAvailableToWithdraw()){
+            throw new RuntimeException("Amount to be withdrawn is over the limit");
+        }
         double newAmount = account.getBalance()-amountToBeWithdrawn;
         account.setBalance(newAmount);
+        double updatedLimit = account.getAvailableToWithdraw() - amountToBeWithdrawn;
+        account.setAvailableToWithdraw(updatedLimit);
         return AccountMapper.mapToAccountDTO(accountRepository.save(account));
     }
 
@@ -70,6 +76,12 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepository.findById(id)
                         .orElseThrow(() -> new RuntimeException("Account does not exist"));
         accountRepository.deleteById(id);
+    }
+    public void addDefaultLimit(){
+        accountRepository.findAll().forEach(entity ->{
+            entity.setAvailableToWithdraw(1000.0);
+            accountRepository.save(entity);
+        });
     }
 
 }
